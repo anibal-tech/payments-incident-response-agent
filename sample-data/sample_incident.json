@@ -1,0 +1,29 @@
+{
+  "incident_id": "PAY-2026-001",
+  "reported_at": "2026-08-28T14:30:00",
+  "source": "production-monitoring",
+  "country": "MX",
+  "service": "payment-authorization",
+  "payment_channel": "card-present",
+  "symptom": "Elevated card authorization declines",
+  "error_code": "91",
+  "started_at": "2026-08-28T14:10:00",
+  "transactions_affected": 12850,
+  "estimated_transaction_value_mxn": 4200000,
+  "customer_impact": "High",
+  "financial_impact": "Under review",
+  "regulatory_impact": "Under review",
+  "known_changes": [
+    "Authorization service release completed at 13:45"
+  ],
+  "dependencies": [
+    "payment-router",
+    "external-processor",
+    "fraud-engine"
+  ],
+  "initial_observations": [
+    "Authorization decline rate increased shortly after deployment",
+    "Payment authorization latency remains within expected range",
+    "Only the card-present payment channel appears affected"
+  ]
+}
