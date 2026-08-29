@@ -1,0 +1,9 @@
+service,issue_type,primary_owner_role,backup_owner_role
+payment-authorization,application,Payments Platform Lead,Application Support Lead
+payment-routing,configuration,Payment Operations Lead,Payments Platform Lead
+processor-connectivity,integration,Integration Lead,Payment Operations Lead
+fraud-engine,risk,Fraud Platform Lead,Risk Operations Lead
+payment-api,application,API Platform Lead,Application Support Lead
+reconciliation,data,Payments Operations Lead,Finance Systems Lead
+settlement,processing,Settlement Operations Lead,Payments Operations Lead
+monitoring,observability,Site Reliability Lead,Application Support Lead
