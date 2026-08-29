@@ -1,0 +1,748 @@
+{
+  "name": "Payments Incident Response Agent - MVP",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "22a1b1d9-e8c4-46cf-b31f-8b34028191c8",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5ff86beb-7b40-4e6c-aeea-f59f3b00e833",
+              "name": "incident_id",
+              "value": "PAY-2026-001",
+              "type": "string"
+            },
+            {
+              "id": "f658f89f-b178-4436-882b-e45e1e7791c6",
+              "name": "reported_at",
+              "value": "2026-08-28T14:30:00",
+              "type": "string"
+            },
+            {
+              "id": "6aab69ae-aa51-4661-8842-109bf5e960aa",
+              "name": "source",
+              "value": "production-monitoring",
+              "type": "string"
+            },
+            {
+              "id": "6ef7bb16-f789-4723-ad5e-1c7a05def475",
+              "name": "country",
+              "value": "MX",
+              "type": "string"
+            },
+            {
+              "id": "45642ca9-efb2-4762-bdc3-923486446a39",
+              "name": "service",
+              "value": "payment-authorization",
+              "type": "string"
+            },
+            {
+              "id": "697c4552-352c-49f5-9f06-dbd458199f88",
+              "name": "payment_channel",
+              "value": "card-present",
+              "type": "string"
+            },
+            {
+              "id": "b9724cc5-f495-45f4-b15a-aec320758803",
+              "name": "symptom",
+              "value": "Elevated card authorization declines",
+              "type": "string"
+            },
+            {
+              "id": "f72e41fd-76a1-4f3d-9de8-a0489f114e7e",
+              "name": "error_code",
+              "value": "91",
+              "type": "string"
+            },
+            {
+              "id": "58cdccea-2c0a-44e4-9213-9e8b9921812d",
+              "name": "started_at",
+              "value": "2026-08-28T14:10:00",
+              "type": "string"
+            },
+            {
+              "id": "fe36e85c-023e-4190-8ed7-70b01a70d44c",
+              "name": "transactions_affected",
+              "value": 12850,
+              "type": "number"
+            },
+            {
+              "id": "78d7e042-9114-431f-b529-3d5bc06404c7",
+              "name": "estimated_transaction_value_mxn",
+              "value": 4200000,
+              "type": "number"
+            },
+            {
+              "id": "f16b2c40-dca0-466b-ac83-3db236feee3c",
+              "name": "customer_impact",
+              "value": "High",
+              "type": "string"
+            },
+            {
+              "id": "6309b5a0-c030-42bd-abab-505c10b73253",
+              "name": "financial_impact",
+              "value": "Under review",
+              "type": "string"
+            },
+            {
+              "id": "518a5002-e7b1-44f1-8c85-04b89b9bb56a",
+              "name": "regulatory_impact",
+              "value": "Under review",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "5dd73529-5a6d-4bcb-9a2d-b510a2eeb72e",
+      "name": "Incident Input"
+    },
+    {
+      "parameters": {
+        "jsCode": "const incident = $json;\n\nconst reportedAt = new Date(incident.reported_at);\nconst startedAt = new Date(incident.started_at);\n\nconst incidentDurationMinutes = Math.max(\n  0,\n  Math.round((reportedAt - startedAt) / 60000)\n);\n\nreturn [\n  {\n    json: {\n      incident_id: incident.incident_id,\n      reported_at: incident.reported_at,\n      started_at: incident.started_at,\n      incident_duration_minutes: incidentDurationMinutes,\n\n      source: incident.source,\n      country: incident.country,\n\n      service: incident.service,\n      payment_channel: incident.payment_channel,\n\n      symptom: incident.symptom,\n      error_code: incident.error_code,\n\n      transactions_affected: incident.transactions_affected,\n      estimated_transaction_value_mxn:\n        incident.estimated_transaction_value_mxn,\n\n      customer_impact: incident.customer_impact,\n      financial_impact: incident.financial_impact,\n      regulatory_impact: incident.regulatory_impact,\n\n      known_changes: [\n        \"Authorization service release completed at 13:45\"\n      ],\n\n      dependencies: [\n        \"payment-router\",\n        \"external-processor\",\n        \"fraud-engine\"\n      ],\n\n      initial_observations: [\n        \"Authorization decline rate increased shortly after deployment\",\n        \"Payment authorization latency remains within expected range\",\n        \"Only the card-present payment channel appears affected\"\n      ],\n\n      ai_governance: {\n        severity_requires_human_validation: true,\n        rca_is_hypothesis_only: true,\n        production_actions_require_human_approval: true\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "231e75b5-d043-4fef-9600-ae5861cdeb0c",
+      "name": "Normalize Incident"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an AI assistant supporting a human payment incident commander.\n\nAnalyze the payment incident provided below and recommend an initial impact classification and severity.\n\nIMPORTANT GOVERNANCE RULES:\n- Do not invent facts.\n- Do not treat unknown information as confirmed.\n- Do not infer confirmed financial loss from transaction value.\n- Do not declare a root cause.\n- A recent production change may be correlated with the incident but must not be treated as the confirmed cause.\n- Clearly identify missing information.\n- Severity is a recommendation only and requires human validation.\n\nUNCERTAINTY HANDLING:\n- Preserve uncertainty exactly as expressed in the source data.\n- If an observation says a service, channel, dependency, or capability \"appears affected\", do not infer that all others are confirmed healthy.\n- Do not convert \"no impact observed\" into \"unaffected\".\n- Prefer wording such as:\n  - \"No impact has been reported in other channels based on available data.\"\n  - \"Other channels have not been confirmed as affected.\"\n  - \"Current evidence is limited to the card-present channel.\"\n- If the available data is insufficient to determine whether other channels are healthy, state that explicitly.\n\nSEVERITY GUIDANCE:\n\nSEV1:\n- Complete or widespread payment inability\n- Very high customer impact\n- Significant transaction volume or business exposure\n- Multiple critical payment capabilities affected\n- Confirmed or significant regulatory risk\n- Critical business process interruption\n\nSEV2:\n- Partial payment degradation\n- Limited payment channels or transaction types affected\n- Moderate customer or business impact\n- Service remains partially available\n- Workaround may be available\n\nSEV3:\n- Low transaction volume affected\n- Limited customer impact\n- No significant business exposure\n- No critical service interruption\n- Operational workaround available\n\nCURRENT INCIDENT:\n\nIncident ID: {{ $json.incident_id }}\nCountry: {{ $json.country }}\nService: {{ $json.service }}\nPayment Channel: {{ $json.payment_channel }}\nSymptom: {{ $json.symptom }}\nError Code: {{ $json.error_code }}\n\nIncident Duration Minutes: {{ $json.incident_duration_minutes }}\n\nTransactions Affected: {{ $json.transactions_affected }}\nEstimated Transaction Value MXN: {{ $json.estimated_transaction_value_mxn }}\n\nCustomer Impact: {{ $json.customer_impact }}\nFinancial Impact: {{ $json.financial_impact }}\nRegulatory Impact: {{ $json.regulatory_impact }}\n\nKnown Changes:\n{{ JSON.stringify($json.known_changes) }}\n\nDependencies:\n{{ JSON.stringify($json.dependencies) }}\n\nInitial Observations:\n{{ JSON.stringify($json.initial_observations) }}\n\nReturn an evidence-based assessment.\n\nClearly distinguish:\n- confirmed facts,\n- observations,\n- unknowns,\n- and recommendations.\n\nDo not upgrade observations into confirmed facts.",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        672,
+        0
+      ],
+      "id": "24744987-f38b-4776-a45b-eddff80f9247",
+      "name": "Classify Impact"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        560,
+        208
+      ],
+      "id": "616eabc5-df8b-4e9a-9d01-b620cadc5fd7",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"recommended_severity\": \"SEV2\",\n  \"impact_level\": \"High\",\n  \"business_impact\": \"Partial degradation of the payment authorization capability.\",\n  \"customer_impact\": \"Customers may experience card-present authorization declines.\",\n  \"financial_risk\": \"Transaction exposure is under review; no confirmed financial loss.\",\n  \"regulatory_risk\": \"Under review.\",\n  \"affected_capabilities\": [\n    \"payment-authorization\",\n    \"card-present\"\n  ],\n  \"reasoning_summary\": \"High transaction impact is observed, and the available evidence is currently limited to the card-present channel; impact in other channels has not been confirmed.\",\n  \"confidence\": 0.85,\n  \"missing_information\": [\n    \"Overall authorization decline rate\",\n    \"Geographic distribution of affected transactions\",\n    \"External processor status\"\n  ],\n  \"requires_human_validation\": true\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        816,
+        208
+      ],
+      "id": "2667c9a0-23fc-4593-8b60-43ff9a8821c9",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "jsCode": "const classification = $json.output;\n\nconst historicalIncidents = [\n  {\n    incident_id: \"PAY-HIST-001\",\n    title: \"Payment Routing Configuration\",\n    symptoms: [\n      \"Elevated authorization declines after routing configuration update\",\n      \"Payment authorization latency remained normal\",\n      \"Specific payment traffic was affected\"\n    ],\n    confirmed_rca: \"Incorrect payment routing priority configuration\",\n    resolution: \"Previous routing configuration restored after human approval\",\n    preventive_actions: [\n      \"Routing configuration validation\",\n      \"Post-change payment smoke tests\",\n      \"Routing decline-rate monitoring\"\n    ]\n  },\n  {\n    incident_id: \"PAY-HIST-002\",\n    title: \"External Processor Connectivity\",\n    symptoms: [\n      \"Intermittent authorization timeouts\",\n      \"Increased authorization latency\",\n      \"Multiple payment channels affected\"\n    ],\n    confirmed_rca: \"External processor network instability\",\n    resolution: \"Alternative processing path enabled after human approval\",\n    preventive_actions: [\n      \"Processor connectivity monitoring\",\n      \"Failover validation\",\n      \"External dependency health checks\"\n    ]\n  },\n  {\n    incident_id: \"PAY-HIST-003\",\n    title: \"Fraud Rule Configuration\",\n    symptoms: [\n      \"Authorization platform remained healthy\",\n      \"External processor remained healthy\",\n      \"Fraud rejection rate increased significantly\"\n    ],\n    confirmed_rca: \"Incorrectly configured fraud threshold\",\n    resolution: \"Fraud rule configuration rolled back after human approval\",\n    preventive_actions: [\n      \"Fraud rule peer review\",\n      \"Pre-production rule validation\",\n      \"Fraud rejection-rate monitoring\"\n    ]\n  }\n];\n\nconst ownershipMatrix = [\n  {\n    service: \"payment-authorization\",\n    issue_type: \"application\",\n    primary_owner_role: \"Payments Platform Lead\",\n    backup_owner_role: \"Application Support Lead\"\n  },\n  {\n    service: \"payment-routing\",\n    issue_type: \"configuration\",\n    primary_owner_role: \"Payment Operations Lead\",\n    backup_owner_role: \"Payments Platform Lead\"\n  },\n  {\n    service: \"processor-connectivity\",\n    issue_type: \"integration\",\n    primary_owner_role: \"Integration Lead\",\n    backup_owner_role: \"Payment Operations Lead\"\n  },\n  {\n    service: \"fraud-engine\",\n    issue_type: \"risk\",\n    primary_owner_role: \"Fraud Platform Lead\",\n    backup_owner_role: \"Risk Operations Lead\"\n  }\n];\n\nreturn [\n  {\n    json: {\n      incident: $(\"Normalize Incident\").first().json,\n      impact_classification: classification,\n      historical_incidents: historicalIncidents,\n      ownership_matrix: ownershipMatrix,\n      context_governance: {\n        historical_cases_are_reference_only: true,\n        similarity_does_not_confirm_root_cause: true,\n        ownership_is_role_based: true\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "26149b65-9e70-4efb-84b6-885077beb6fc",
+      "name": "Add Incident Context"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an AI assistant supporting a human payment incident commander.\n\nYour task is to generate ranked root cause hypotheses for the payment incident below.\n\nIMPORTANT GOVERNANCE RULES:\n- Do not declare any root cause as confirmed.\n- Historical incidents are reference material only.\n- Similarity to a historical incident does not prove causality.\n- Do not invent telemetry, logs, processor responses, fraud signals, configuration changes, deployment details, system behavior, or technical mechanisms that are not present in the input.\n- Do not assume that a listed dependency is affected.\n- Do not assume that a recent deployment caused the incident.\n- Temporal correlation is evidence for investigation, not proof of causation.\n- Clearly distinguish supporting evidence from contradicting or weakening evidence.\n- Confidence must reflect the quality of available evidence.\n- If evidence is insufficient, explicitly say so.\n- Production actions require human approval.\n- The final RCA remains the responsibility of human incident management and technical teams.\n\nHYPOTHETICAL EXAMPLES:\n- Technical mechanisms such as malformed requests, incorrect field mappings, routing errors, fraud thresholds, processor behavior, configuration errors, or software regressions may only be mentioned when supported by input evidence.\n- If such mechanisms are useful as investigative possibilities but are not supported by evidence, explicitly label them as hypothetical examples, not observed behavior.\n- Never present a hypothetical mechanism as something that occurred.\n\nUNCERTAINTY HANDLING:\n- Preserve words such as \"appears\", \"possible\", \"potential\", \"reported\", and \"under review\".\n- Do not convert \"appears affected\" into \"confirmed affected\".\n- Do not infer that other channels, services, dependencies, processors, or systems are healthy merely because no impact was reported.\n- Do not convert absence of evidence into evidence of absence.\n\nHISTORICAL INCIDENT SAFETY:\n- Historical incidents may be used to identify investigation patterns.\n- Do not increase confidence merely because a historical incident had similar symptoms.\n- Clearly state when historical similarity is being used only as an investigative reference.\n\nCURRENT INCIDENT:\n{{ JSON.stringify($json.incident) }}\n\nIMPACT CLASSIFICATION:\n{{ JSON.stringify($json.impact_classification) }}\n\nHISTORICAL INCIDENT REFERENCES:\n{{ JSON.stringify($json.historical_incidents) }}\n\nGenerate the most plausible RCA hypotheses based only on the available evidence.\n\nFor each hypothesis:\n1. Give it a rank.\n2. Name the suspected component or failure domain.\n3. Describe the hypothesis using explicitly uncertain language.\n4. List supporting evidence actually present in the input.\n5. List contradicting or weakening evidence.\n6. Provide a confidence score from 0.0 to 1.0.\n7. Provide validation steps that a human technical team should perform.\n8. Identify additional information required.\n\nVALIDATION SAFETY:\n- Validation steps must be diagnostic and evidence-gathering activities.\n- Do not request PAN, CVV, PII, authentication secrets, credentials, or sensitive payment payloads.\n- Refer only to sanitized, tokenized, masked, or non-sensitive diagnostic information where transaction-level analysis is needed.\n- Do not recommend executing rollback, routing changes, processor failover, fraud rule changes, configuration changes, deployments, or any other production modification automatically.\n- Do not invent diagnostic time windows.\n- Use the actual incident window when explicitly provided.\n- If broader pre-incident or post-incident analysis is useful,\n  refer to an \"appropriate human-defined investigation window\"\n  without inventing start or end times.\n\nThe output represents hypotheses for investigation only, not a confirmed RCA.",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1264,
+        0
+      ],
+      "id": "3769a819-c36a-45dc-ab24-8191493cd1f1",
+      "name": "Generate RCA Hypotheses"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1152,
+        208
+      ],
+      "id": "3a189838-2716-47d4-a1c2-8271a5cb5748",
+      "name": "OpenAI Chat Model1"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"rca_status\": \"Hypotheses only - not confirmed\",\n  \"hypotheses\": [\n    {\n      \"rank\": 1,\n      \"suspected_domain\": \"payment-routing\",\n      \"hypothesis\": \"A routing-related configuration or deployment change may be contributing to elevated card-present authorization declines.\",\n      \"supporting_evidence\": [\n        \"Authorization declines increased shortly after a production release.\",\n        \"Authorization latency remains within expected range.\",\n        \"Only card-present traffic appears affected.\"\n      ],\n      \"contradicting_evidence\": [\n        \"No routing configuration change has been confirmed.\",\n        \"No routing telemetry is available.\"\n      ],\n      \"confidence\": 0.65,\n      \"validation_steps\": [\n        \"Compare routing configuration before and after the release.\",\n        \"Review routing decision logs for affected transactions.\",\n        \"Compare card-present and other payment channel routing paths.\"\n      ],\n      \"additional_information_required\": [\n        \"Routing configuration history\",\n        \"Routing decision logs\",\n        \"Processor response distribution\"\n      ]\n    }\n  ],\n  \"overall_assessment\": \"Available evidence supports investigation of several possible failure domains, but no root cause is confirmed.\",\n  \"requires_human_validation\": true\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1408,
+        208
+      ],
+      "id": "4dd08c79-b04b-4125-9c82-ecf1a0378d9d",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rcaOutput = $json.output;\n\nconst context = $(\"Add Incident Context\").first().json;\n\nconst ownershipMatrix = context.ownership_matrix;\n\nconst domainMapping = {\n  \"authorization-service\": {\n    service: \"payment-authorization\",\n    issue_type: \"application\"\n  },\n  \"payment-router\": {\n    service: \"payment-routing\",\n    issue_type: \"configuration\"\n  },\n  \"fraud-engine\": {\n    service: \"fraud-engine\",\n    issue_type: \"risk\"\n  },\n  \"external-processor\": {\n    service: \"processor-connectivity\",\n    issue_type: \"integration\"\n  },\n  \"point-of-sale\": {\n    service: \"payment-authorization\",\n    issue_type: \"application\"\n  }\n};\n\nfunction findDomainKey(domain) {\n  const normalized = domain.toLowerCase();\n\n  return Object.keys(domainMapping).find(\n    key => normalized.includes(key)\n  );\n}\n\nconst hypothesesWithOwnership = rcaOutput.hypotheses.map(hypothesis => {\n\n  const domainKey = findDomainKey(hypothesis.suspected_domain);\n\n  let ownership = {\n    primary_owner_role: \"Incident Commander to assign\",\n    backup_owner_role: \"Incident Commander to assign\",\n    ownership_status: \"Unmapped\"\n  };\n\n  if (domainKey) {\n\n    const mapping = domainMapping[domainKey];\n\n    const matrixEntry = ownershipMatrix.find(\n      entry =>\n        entry.service === mapping.service &&\n        entry.issue_type === mapping.issue_type\n    );\n\n    if (matrixEntry) {\n      ownership = {\n        primary_owner_role: matrixEntry.primary_owner_role,\n        backup_owner_role: matrixEntry.backup_owner_role,\n        ownership_status: \"Mapped\"\n      };\n    }\n  }\n\n  return {\n    ...hypothesis,\n    ownership\n  };\n});\n\nreturn [\n  {\n    json: {\n      incident: context.incident,\n      impact_classification: context.impact_classification,\n\n      rca_analysis: {\n        rca_status: rcaOutput.rca_status,\n        hypotheses: hypothesesWithOwnership,\n        overall_assessment: rcaOutput.overall_assessment,\n        requires_human_validation:\n          rcaOutput.requires_human_validation\n      },\n\n      governance: {\n        ownership_mapping_is_deterministic: true,\n        owners_are_roles_not_individuals: true,\n        rca_remains_unconfirmed: true,\n        production_actions_require_human_approval: true\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        0
+      ],
+      "id": "dc1c1bc2-5e5d-436a-ad8e-27666befe5e3",
+      "name": "Map RCA Ownership"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an AI assistant supporting a human payment incident commander.\n\nCreate a prioritized incident action plan based only on the incident, impact classification, RCA hypotheses, validation steps, and assigned owner roles provided below.\n\nIMPORTANT GOVERNANCE RULES:\n- Root cause is NOT confirmed.\n- Do not invent evidence, telemetry, system state, owners, deadlines, completed actions, thresholds, sample sizes, percentages, time windows, SLAs, or operational parameters.\n- Use only owner roles already assigned in the RCA analysis.\n- Do not assign individual people.\n- Do not state that an action has been executed.\n- Prefer investigation and evidence collection before remediation while root cause remains unconfirmed.\n- Do not treat transaction exposure as confirmed financial loss.\n\nNO INVENTED OPERATIONAL PARAMETERS:\n- Never invent numeric thresholds, sample sizes, percentages, monitoring thresholds, alert thresholds, deadlines, time windows, or acceptance criteria.\n- If an operational parameter is required but is not supplied in the input, use wording such as:\n  \"human-defined threshold\",\n  \"approved diagnostic sample\",\n  \"appropriate investigation window\",\n  \"organization-defined SLA\",\n  or \"TBD by incident commander\".\n- Do not create example numbers, even when they appear reasonable.\n\nPAYMENT DATA SAFETY:\n- Never request, expose, reproduce, store, or recommend collecting PAN, CVV, PIN, PII, credentials, authentication secrets, encryption keys, or sensitive payment payloads.\n- Transaction-level investigation must use sanitized, masked, tokenized, or non-sensitive identifiers and diagnostic metadata.\n- Do not request full request or response payloads if they may contain sensitive payment or personal information.\n- Prefer logs containing timestamps, correlation IDs, tokenized transaction references, response codes, component identifiers, and non-sensitive diagnostic metadata.\n- External processor information must also be sanitized before being used by the AI workflow.\n\nPRODUCTION SAFETY:\n- Rollbacks, routing changes, processor failover, fraud-rule changes, configuration changes, deployment changes, service restarts, feature-flag changes, or any other production modification require explicit human approval.\n- Customer, merchant, processor, regulatory, legal, or public communications require appropriate human approval when applicable.\n- The AI may prepare or recommend these actions but must never represent them as authorized or executed.\n\nUNCERTAINTY:\n- Preserve uncertainty from the RCA analysis.\n- Do not turn an RCA hypothesis into a fact.\n- Do not state that a component caused the incident unless confirmed evidence is present.\n- Actions should validate or rule out hypotheses rather than assume them to be true.\n\nINPUT:\n{{ JSON.stringify($json) }}\n\nCreate a prioritized action plan.\n\nPRIORITIES:\n\nP1 =\nImmediate diagnostic, evidence-gathering, monitoring, or safe coordination activity needed to understand current impact.\n\nP2 =\nNear-term investigation, contingency preparation, or coordination needed to support a human remediation decision.\n\nP3 =\nPost-incident analysis, preventive improvement, testing, observability, or governance enhancement.\n\nFor each action:\n- assign a unique action_id\n- assign P1, P2, or P3\n- specify the action category\n- describe the proposed action\n- use an owner role already present in the RCA analysis\n- explain which RCA hypothesis or incident concern the action addresses\n- state the expected result\n- indicate whether human approval is required\n- identify the approval reason when applicable\n\nDo not execute any action.\n\nGenerate recommendations only.\n\nIf required information or an operational parameter is unavailable, explicitly mark it as requiring human definition rather than inventing a value.",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1856,
+        0
+      ],
+      "id": "5954535f-fe5e-4c9d-be47-64be691e73ad",
+      "name": "Generate Action Plan"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1744,
+        208
+      ],
+      "id": "24506860-db4a-4035-860d-197be5fa5d1b",
+      "name": "OpenAI Chat Model2"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"action_plan_status\": \"Proposed - not executed\",\n  \"actions\": [\n    {\n      \"action_id\": \"ACT-001\",\n      \"priority\": \"P1\",\n      \"category\": \"Investigation\",\n      \"action\": \"Review authorization-service logs and trace affected card-present transactions.\",\n      \"owner_role\": \"Payments Platform Lead\",\n      \"addresses\": \"RCA hypothesis rank 1 - authorization-service\",\n      \"expected_result\": \"Determine whether the authorization service generated or translated the observed declines.\",\n      \"requires_human_approval\": false,\n      \"approval_reason\": \"Read-only diagnostic investigation.\"\n    },\n    {\n      \"action_id\": \"ACT-002\",\n      \"priority\": \"P1\",\n      \"category\": \"Potential Remediation\",\n      \"action\": \"Evaluate rollback readiness for the authorization-service release if evidence supports deployment regression.\",\n      \"owner_role\": \"Payments Platform Lead\",\n      \"addresses\": \"RCA hypothesis rank 1 - authorization-service\",\n      \"expected_result\": \"Prepare a controlled remediation option if the deployment is validated as causal.\",\n      \"requires_human_approval\": true,\n      \"approval_reason\": \"Any production rollback requires explicit human authorization.\"\n    }\n  ],\n  \"immediate_focus\": \"Validate the highest-ranked hypotheses while maintaining service stability.\",\n  \"decisions_required\": [\n    \"Human incident commander validation of recommended severity.\",\n    \"Human authorization before any production remediation.\"\n  ],\n  \"requires_human_review\": true\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2000,
+        208
+      ],
+      "id": "81868b31-d1c0-4a1c-add4-c99eee60c22d",
+      "name": "Structured Output Parser2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an AI assistant supporting a human payment incident commander.\n\nCreate a concise executive incident brief for senior technology and business stakeholders.\n\nUse ONLY information explicitly contained in:\n- the normalized incident,\n- impact classification,\n- RCA hypotheses,\n- ownership mapping,\n- and proposed action plan.\n\nThe purpose of this brief is summarization, not additional analysis.\n\nGOVERNANCE AND SAFETY RULES:\n- Do not invent facts, metrics, thresholds, deadlines, decisions, time windows, sample sizes, system states, or operational parameters.\n- Do not introduce new RCA hypotheses.\n- Do not introduce new actions.\n- Do not introduce new causal explanations.\n- Do not present hypotheses as confirmed root causes.\n- Clearly distinguish confirmed facts, observations, hypotheses, unknowns, recommendations, and pending decisions.\n- Do not state that proposed actions have been executed.\n- Do not state that transaction exposure represents confirmed financial loss.\n- Production changes require explicit human approval.\n- External, customer, merchant, legal, regulatory, or public communications require appropriate human approval.\n- If information is unknown, say \"Under review\", \"Not confirmed\", or \"Not provided\".\n\nUNCERTAINTY PRESERVATION:\n- Preserve uncertainty exactly as expressed upstream.\n- Never convert \"appears affected\" into \"confirmed affected\".\n- Never convert \"no impact reported\" into \"unaffected\".\n- Never infer that other channels, services, regions, processors, or dependencies are healthy because no impact has been reported.\n- Never convert a correlation into causation.\n- RCA hypotheses must remain explicitly labeled as unconfirmed.\n\nOPERATIONAL PARAMETER SAFETY:\n- Do not invent or repeat an operational parameter if it was generated without explicit source evidence.\n- Numeric thresholds, diagnostic sample sizes, monitoring thresholds, SLAs, deadlines, or investigation windows must come from explicit incident data or be described as human-defined/TBD.\n- When summarizing an action that contains a human-defined parameter, preserve that wording.\n\nPAYMENT DATA SAFETY:\n- Never request or expose PAN, CVV, PIN, PII, credentials, authentication secrets, encryption keys, or sensitive payment payloads.\n- Refer only to sanitized, masked, tokenized, or non-sensitive diagnostic information.\n- Do not include sensitive transaction-level information in the executive brief.\n\nSTATUS SAFETY:\n- Proposed actions must use status such as \"Proposed\", \"Pending\", or \"Requires approval\".\n- Do not imply completion unless completion is explicitly provided in the input.\n- A prepared runbook does not mean a rollback has been approved.\n- A recommended severity does not mean severity has been validated.\n\nINCIDENT:\n{{ JSON.stringify($(\"Map RCA Ownership\").first().json.incident) }}\n\nIMPACT CLASSIFICATION:\n{{ JSON.stringify($(\"Map RCA Ownership\").first().json.impact_classification) }}\n\nRCA ANALYSIS:\n{{ JSON.stringify($(\"Map RCA Ownership\").first().json.rca_analysis) }}\n\nPROPOSED ACTION PLAN:\n{{ JSON.stringify($json.output) }}\n\nCreate a concise executive incident brief.\n\nThe executive summary should answer:\n1. What is observed?\n2. What is the current business/customer impact?\n3. What is known versus unknown?\n4. What are the leading unconfirmed hypotheses?\n5. What investigation is proposed?\n6. What decisions still require human approval?\n\nDo not perform additional root-cause reasoning beyond the supplied RCA analysis.",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        2224,
+        0
+      ],
+      "id": "8d0a2a73-d0a6-4627-a0e1-d76adcde6bd0",
+      "name": "Generate Executive Brief"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2208,
+        224
+      ],
+      "id": "352f7726-9e7f-4b2c-aeb0-21b370a42531",
+      "name": "OpenAI Chat Model3"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"incident_id\": \"PAY-2026-001\",\n  \"recommended_severity\": \"SEV2\",\n  \"severity_status\": \"Pending human validation\",\n  \"current_status\": \"Investigation in progress\",\n  \"business_impact\": \"Payment authorization degradation affecting card-present transactions.\",\n  \"customer_impact\": \"Customers may experience elevated card-present authorization declines.\",\n  \"transaction_exposure\": \"Estimated affected transaction value: MXN 4,200,000. This is not confirmed financial loss.\",\n  \"confirmed_facts\": [\n    \"Elevated authorization declines have been observed.\",\n    \"Card-present transactions appear affected.\"\n  ],\n  \"leading_rca_hypotheses\": [\n    {\n      \"rank\": 1,\n      \"domain\": \"authorization-service\",\n      \"summary\": \"Potential deployment-related regression.\",\n      \"confidence\": 0.6,\n      \"status\": \"Not confirmed\"\n    }\n  ],\n  \"immediate_actions\": [\n    {\n      \"priority\": \"P1\",\n      \"action\": \"Review authorization-service logs and transaction traces.\",\n      \"owner_role\": \"Payments Platform Lead\",\n      \"status\": \"Proposed\"\n    }\n  ],\n  \"decisions_required\": [\n    \"Validate recommended incident severity.\",\n    \"Approve any production remediation before execution.\"\n  ],\n  \"key_unknowns\": [\n    \"Origin of error code 91.\",\n    \"Confirmed root cause.\"\n  ],\n  \"executive_summary\": \"A card-present payment authorization degradation is under investigation. Root cause remains unconfirmed and remediation decisions require human approval.\",\n  \"requires_human_review\": true\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2432,
+        208
+      ],
+      "id": "a9ab2ac3-88b3-4408-a850-604692975ea9",
+      "name": "Structured Output Parser3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77d84968-02dd-40cb-a23e-6084543f5999",
+              "name": "review_status",
+              "value": "Pending",
+              "type": "string"
+            },
+            {
+              "id": "bd3fcebf-a03f-4338-9534-faeebb29b10a",
+              "name": "reviewed_by_role",
+              "value": "Incident Commander",
+              "type": "string"
+            },
+            {
+              "id": "6164cb9b-43ae-4ea2-ab16-04c73f87a47e",
+              "name": "severity_validated",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "811ef372-3870-4c75-ba07-dbe05607e01c",
+              "name": "production_action_approved",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "f9a0d6b1-1df6-495a-a99e-6746ebc59ecc",
+              "name": "external_communication_approved",
+              "value": false,
+              "type": "boolean"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2592,
+        16
+      ],
+      "id": "deef9f0e-1b02-42b7-bb0e-27b11c04be77",
+      "name": "Human Review"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1582ac9f-3e88-42cd-8d7a-c186bf739838",
+              "leftValue": "={{ $json.severity_validated }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "2f30fcb0-7fb6-4703-aade-3b64c3d068e2",
+              "leftValue": "={{ $json.production_action_approved }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "d67383bf-0e61-471b-8f1e-436d2f8ac336",
+              "leftValue": "={{ $json.external_communication_approved }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2816,
+        16
+      ],
+      "id": "2c8f378c-429c-40b7-a555-fb10c10800d4",
+      "name": "Approval Gate"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "df33fd52-2e7c-4d0e-9b94-fab6e63da9fc",
+              "name": "workflow_status",
+              "value": "BLOCKED_PENDING_HUMAN_APPROVAL",
+              "type": "string"
+            },
+            {
+              "id": "342521c9-5d56-4a97-a519-06539f1857aa",
+              "name": "automation_allowed",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "90115b3b-1fe2-42c0-a0da-301587035d11",
+              "name": "next_step",
+              "value": "Incident Commander review required",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        3072,
+        240
+      ],
+      "id": "9a30f9b6-7082-490c-beb7-84b23ff7b85c",
+      "name": "Await Human Approval"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8d166a8e-b3a1-4b77-a7e2-e49a1d5ff310",
+              "name": "workflow_status",
+              "value": "APPROVED_FOR_HUMAN_CONTROLLED_EXECUTION",
+              "type": "string"
+            },
+            {
+              "id": "dc9cf99f-3f4e-4f2b-8824-d72f4691ff90",
+              "name": "automation_allowed",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "593d5ab3-ca2b-43c4-a7c3-53010d60418b",
+              "name": "next_step",
+              "value": "Proceed with explicitly approved human-controlled actions",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        3040,
+        16
+      ],
+      "id": "8e3afb47-3c69-49f5-87c5-7945f30de7e5",
+      "name": "Approved for Human-Controlled Execution"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Incident Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Incident Input": {
+      "main": [
+        [
+          {
+            "node": "Normalize Incident",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Incident": {
+      "main": [
+        [
+          {
+            "node": "Classify Impact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Classify Impact",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Classify Impact",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Impact": {
+      "main": [
+        [
+          {
+            "node": "Add Incident Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Incident Context": {
+      "main": [
+        [
+          {
+            "node": "Generate RCA Hypotheses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate RCA Hypotheses",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Generate RCA Hypotheses",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate RCA Hypotheses": {
+      "main": [
+        [
+          {
+            "node": "Map RCA Ownership",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map RCA Ownership": {
+      "main": [
+        [
+          {
+            "node": "Generate Action Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Action Plan",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Generate Action Plan",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Action Plan": {
+      "main": [
+        [
+          {
+            "node": "Generate Executive Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Executive Brief",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser3": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Generate Executive Brief",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Executive Brief": {
+      "main": [
+        [
+          {
+            "node": "Human Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Human Review": {
+      "main": [
+        [
+          {
+            "node": "Approval Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval Gate": {
+      "main": [
+        [
+          {
+            "node": "Approved for Human-Controlled Execution",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Await Human Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": [],
+  "tags": []
+}
