@@ -34,6 +34,12 @@ It does not autonomously confirm root cause, authorize production changes, commu
 
 ## Workflow
 
+![Payments Incident Response Agent Architecture](./assets/diagrams/payments-incident-response-agent-flow.png)
+
+*AI-assisted reasoning with deterministic controls and explicit human operational authority.*
+
+For a detailed explanation of the architecture and control boundaries, see the [Architecture Overview](./docs/architecture-overview.md).
+
 ```text
 Payment Incident
       ↓
