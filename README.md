@@ -12,7 +12,7 @@ The project demonstrates how Generative AI can support payment incident response
 
 Payment incidents require teams to rapidly understand business impact, investigate possible causes, coordinate technical ownership, define response actions, and communicate clearly with business and technology stakeholders.
 
-The **Payments Incident Response Agent** explores how Generative AI and workflow automation can assist with that process.
+The **Payments Incident Response Agent** explores how Generative AI and workflow automation can assist that process.
 
 The workflow receives structured payment-incident information and progressively transforms it into:
 
@@ -24,7 +24,7 @@ The workflow receives structured payment-incident information and progressively 
 - an executive incident brief,
 - a human-review decision point.
 
-The solution follows a **human-in-the-loop** architecture.
+The solution follows a **human-in-the-loop architecture**.
 
 AI provides decision support.
 
@@ -39,61 +39,6 @@ It does not autonomously confirm root cause, authorize production changes, commu
 *AI-assisted reasoning with deterministic controls and explicit human operational authority.*
 
 For a detailed explanation of the architecture and control boundaries, see the [Architecture Overview](./docs/architecture-overview.md).
-
-```text
-Payment Incident
-      ↓
-Normalize Incident
-      ↓
-Classify Impact
-      ↓
-Add Incident Context
-      ↓
-Generate RCA Hypotheses
-      ↓
-Map RCA Ownership
-      ↓
-Generate Action Plan
-      ↓
-Generate Executive Brief
-      ↓
-Human Review
-      ↓
-Approval Gate
-     ↙     ↘
- FALSE     TRUE
-   ↓         ↓
-Await      Approved for
-Human      Human-Controlled
-Approval   Execution
-```
-
-The workflow intentionally separates:
-
-```text
-AI Reasoning
-    ↓
-Impact assessment
-RCA hypotheses
-Action recommendations
-Executive summarization
-
-Deterministic Logic
-    ↓
-Incident normalization
-Context assembly
-Ownership mapping
-Approval evaluation
-Workflow-state routing
-
-Human Authority
-    ↓
-Severity validation
-RCA confirmation
-Production-action approval
-External-communication approval
-Incident decisions
-```
 
 ---
 
@@ -121,7 +66,7 @@ All sample incident data included in this repository is fictional and sanitized.
 
 An LLM analyzes the incident and recommends an initial severity classification.
 
-The model must distinguish:
+The model must distinguish between:
 
 - confirmed facts,
 - observations,
@@ -149,7 +94,7 @@ The AI generates ranked Root Cause Analysis hypotheses containing:
 - validation steps,
 - additional information required.
 
-The output represents **hypotheses only**.
+The output presents **hypotheses only**.
 
 The AI does not declare a confirmed root cause.
 
@@ -219,7 +164,7 @@ workflow_status = APPROVED_FOR_HUMAN_CONTROLLED_EXECUTION
 automation_allowed = false
 ```
 
-Human approval does not grant autonomous execution authority to the AI workflow.
+Human approval does **not** grant autonomous execution authority to the AI workflow.
 
 ---
 
@@ -244,15 +189,13 @@ The MVP combines generative reasoning with deterministic workflow controls.
 
 This separation is intentional.
 
-Generative AI is used where interpretation and reasoning are valuable.
+**Generative AI** is used where interpretation and reasoning are valuable.
 
-Deterministic logic is used where predictable control behavior is required.
+**Deterministic logic** is used where predictable control behavior is required.
 
-Human authority remains responsible for consequential operational decisions.
+**Human authority** remains responsible for consequential operational decisions.
 
-For a detailed description, see:
-
-[Architecture Overview](./docs/architecture-overview.md)
+For a detailed description, see the [Architecture Overview](./docs/architecture-overview.md).
 
 ---
 
@@ -290,6 +233,10 @@ Proposed Action ≠ Executed Action
 Human Approval ≠ Autonomous AI Execution
 ```
 
+Diagnostic analysis must use the actual incident window when explicitly provided.
+
+If broader pre-incident or post-incident analysis is useful, the AI must refer to an **appropriate human-defined investigation window** rather than inventing start or end times.
+
 The prompts also prohibit requesting or exposing sensitive information such as:
 
 - PAN,
@@ -303,9 +250,7 @@ The prompts also prohibit requesting or exposing sensitive information such as:
 
 Transaction-level investigation should use sanitized, masked, tokenized, or otherwise non-sensitive diagnostic information.
 
-For the complete safety model, see:
-
-[Responsible AI and Safety](./docs/responsible-ai-and-safety.md)
+For the complete safety model, see [Responsible AI and Safety](./docs/responsible-ai-and-safety.md).
 
 ---
 
@@ -323,7 +268,7 @@ generate-actions.md
 executive-incident-brief.md
 ```
 
-Each prompt contains:
+Each prompt documents:
 
 - purpose,
 - inputs,
@@ -332,9 +277,7 @@ Each prompt contains:
 - safety constraints,
 - production prompt.
 
-See:
-
-[Prompt Documentation](./prompts/README.md)
+See [Prompt Documentation](./prompts/README.md).
 
 ---
 
@@ -359,16 +302,14 @@ Example:
 }
 ```
 
-The estimated transaction value represents transaction exposure and must not be interpreted as confirmed financial loss.
+The estimated transaction value represents **transaction exposure** and must not be interpreted as confirmed financial loss.
 
 The sample dataset also includes:
 
 - fictional historical payment incidents,
 - a role-based ownership matrix.
 
-See:
-
-[Sample Data](./sample-data/README.md)
+See [Sample Data](./sample-data/README.md).
 
 ---
 
@@ -422,6 +363,10 @@ payments-incident-response-agent/
 ├── README.md
 ├── .gitignore
 │
+├── assets/
+│   └── diagrams/
+│       └── payments-incident-response-agent-flow.png
+│
 ├── docs/
 │   ├── README.md
 │   ├── architecture-overview.md
@@ -444,13 +389,9 @@ payments-incident-response-agent/
 │   ├── README.md
 │   └── n8n-workflow.json
 │
-├── outputs/
-│   ├── README.md
-│   └── sample-executive-incident-brief.md
-│
-└── assets/
-    └── diagrams/
-        └── payments-incident-response-agent-flow.png
+└── outputs/
+    ├── README.md
+    └── sample-executive-incident-brief.md
 ```
 
 ---
@@ -469,14 +410,13 @@ To test the MVP:
 2. Reconnect the OpenAI model nodes using your own credential.
 3. Review the workflow configuration.
 4. Keep the Human Review node in its fail-safe default state.
-5. Execute the workflow from the Manual Trigger.
+5. Execute the workflow from the Manual Trigger using **Execute Workflow**.
 6. Verify that the Approval Gate follows the blocked branch when approvals remain false.
+7. If testing the approved path, explicitly change the human-review approval values and verify that the workflow reaches `APPROVED_FOR_HUMAN_CONTROLLED_EXECUTION` while `automation_allowed` remains `false`.
 
 The public workflow export does not include the original OpenAI credential configuration.
 
-For detailed instructions, see:
-
-[Workflow Documentation](./workflow/README.md)
+For detailed instructions, see [Workflow Documentation](./workflow/README.md).
 
 ---
 
@@ -504,7 +444,7 @@ It does not autonomously:
 - contact regulators,
 - close incidents.
 
-These limitations are intentional design boundaries, not missing autonomous capabilities.
+These limitations are **intentional design boundaries**, not missing autonomous capabilities.
 
 ---
 
